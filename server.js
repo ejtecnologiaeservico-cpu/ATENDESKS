@@ -16,7 +16,8 @@ app.use(express.json({ limit: '50mb' }));
 // Servir arquivos estáticos da pasta 'public'
 app.use(express.static(path.join(__dirname)));
 app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/icon', express.static(path.join(__dirname, 'icon')));
+app.use('/icon', express.static(path.join(__dirname, 'icones cartorios')));
+app.use('/icones', express.static(path.join(__dirname, 'icones cartorios')));
 
 // Servir o index.html da raiz
 app.get('/', (req, res) => {
@@ -54,30 +55,68 @@ app.get('/api/data', async (req, res) => {
 
 // Gerenciar Cartórios
 app.get('/api/cartorios', async (req, res) => {
-    const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
-    res.json(cartorios);
+    try {
+        const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
+        res.json(cartorios);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/cartorios', async (req, res) => {
-    const { nome, imagem } = req.body;
-    const result = await db.run("INSERT INTO cartorios (nome, imagem) VALUES (?, ?)", [nome, imagem]);
-    const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
-    io.emit('CARTORIOS_ATUALIZADOS', cartorios);
-    res.status(201).json({ id: result.id, nome, imagem });
+    try {
+        const { nome, imagem } = req.body;
+        const result = await db.run("INSERT INTO cartorios (nome, imagem) VALUES (?, ?)", [nome, imagem]);
+        const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
+        io.emit('CARTORIOS_ATUALIZADOS', cartorios);
+        res.status(201).json({ id: result.id, nome, imagem });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.delete('/api/cartorios/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    await db.run("UPDATE cartorios SET status = 'inativo' WHERE id = ?", [id]);
-    const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
-    io.emit('CARTORIOS_ATUALIZADOS', cartorios);
-    res.json({ success: true });
+    try {
+        const id = parseInt(req.params.id);
+        await db.run("UPDATE cartorios SET status = 'inativo' WHERE id = ?", [id]);
+        const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
+        io.emit('CARTORIOS_ATUALIZADOS', cartorios);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/cartorios/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { nome, imagem, senha } = req.body;
+        
+        let sql = "UPDATE cartorios SET nome = ?, imagem = ? WHERE id = ?";
+        let params = [nome, imagem, id];
+        
+        if (senha) {
+            sql = "UPDATE cartorios SET nome = ?, imagem = ?, senha = ? WHERE id = ?";
+            params = [nome, imagem, senha, id];
+        }
+
+        await db.run(sql, params);
+        const cartorios = await db.query("SELECT * FROM cartorios WHERE status = 'ativo'");
+        io.emit('CARTORIOS_ATUALIZADOS', cartorios);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Gerenciar Fila / Triagem
 app.get('/api/fila', async (req, res) => {
-    const fila = await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC");
-    res.json(fila);
+    try {
+        const fila = await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC");
+        res.json(fila);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Buscar Visitante por CPF (Para retorno rápido)
@@ -187,55 +226,63 @@ app.post('/api/config/locais', async (req, res) => {
 
 // Atualizar Status (Chamar, Atender, Finalizar)
 app.patch('/api/fila/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    const { status } = req.body;
-    let sql = "UPDATE fila SET status = ? WHERE id = ?";
-    let params = [status, id];
+    try {
+        const id = parseInt(req.params.id);
+        const { status } = req.body;
+        let sql = "UPDATE fila SET status = ? WHERE id = ?";
+        let params = [status, id];
 
-    if (status === 'chamado') {
-        sql = "UPDATE fila SET status = ?, hora_chamada = CURRENT_TIMESTAMP WHERE id = ?";
-    } else if (status === 'em_atendimento') {
-        sql = "UPDATE fila SET status = ?, hora_atendimento = CURRENT_TIMESTAMP WHERE id = ?";
-    } else if (status === 'finalizado') {
-        sql = "UPDATE fila SET status = ?, hora_saida = CURRENT_TIMESTAMP WHERE id = ?";
+        if (status === 'chamado') {
+            sql = "UPDATE fila SET status = ?, hora_chamada = CURRENT_TIMESTAMP WHERE id = ?";
+        } else if (status === 'em_atendimento') {
+            sql = "UPDATE fila SET status = ?, hora_atendimento = CURRENT_TIMESTAMP WHERE id = ?";
+        } else if (status === 'finalizado') {
+            sql = "UPDATE fila SET status = ?, hora_saida = CURRENT_TIMESTAMP WHERE id = ?";
+        }
+
+        await db.run(sql, params);
+        const pessoa = await db.get("SELECT * FROM fila WHERE id = ?", [id]);
+
+        if (status === 'chamado') {
+            io.emit('NOVA_CHAMADA', pessoa);
+            const historico = await db.query("SELECT * FROM fila WHERE status IN ('chamado', 'em_atendimento', 'finalizado') ORDER BY hora_chamada DESC LIMIT 6");
+            io.emit('HISTORICO_ATUALIZADO', historico);
+        }
+
+        io.emit('FILA_ATUALIZADA', await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC"));
+        res.json(pessoa);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    await db.run(sql, params);
-    const pessoa = await db.get("SELECT * FROM fila WHERE id = ?", [id]);
-
-    if (status === 'chamado') {
-        io.emit('NOVA_CHAMADA', pessoa);
-        const historico = await db.query("SELECT * FROM fila WHERE status IN ('chamado', 'em_atendimento', 'finalizado') ORDER BY hora_chamada DESC LIMIT 6");
-        io.emit('HISTORICO_ATUALIZADO', historico);
-    }
-
-    io.emit('FILA_ATUALIZADA', await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC"));
-    res.json(pessoa);
 });
 
 // Transferir Atendimento
 app.post('/api/transferir', async (req, res) => {
-    const { id, novoCartorioId, nomeNovoCartorio, origemCartorioNome } = req.body;
-    
-    // Marcar atual como transferido e criar novo registro
-    const antigaPessoa = await db.get("SELECT * FROM fila WHERE id = ?", [id]);
-    await db.run("UPDATE fila SET status = 'transferido', hora_saida = CURRENT_TIMESTAMP WHERE id = ?", [id]);
-    
-    const result = await db.run(
-        "INSERT INTO fila (nome, cpf, contato, cartorio_id, nome_cartorio, status, foto, origem_transferencia) VALUES (?, ?, ?, ?, ?, 'aguardando', ?, ?)",
-        [antigaPessoa.nome, antigaPessoa.cpf, antigaPessoa.contato, novoCartorioId, nomeNovoCartorio, antigaPessoa.foto, origemCartorioNome]
-    );
+    try {
+        const { id, novoCartorioId, nomeNovoCartorio, origemCartorioNome } = req.body;
+        
+        // Marcar atual como transferido e criar novo registro
+        const antigaPessoa = await db.get("SELECT * FROM fila WHERE id = ?", [id]);
+        await db.run("UPDATE fila SET status = 'transferido', hora_saida = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+        
+        const result = await db.run(
+            "INSERT INTO fila (nome, cpf, contato, cartorio_id, nome_cartorio, status, foto, origem_transferencia) VALUES (?, ?, ?, ?, ?, 'aguardando', ?, ?)",
+            [antigaPessoa.nome, antigaPessoa.cpf, antigaPessoa.contato, novoCartorioId, nomeNovoCartorio, antigaPessoa.foto, origemCartorioNome]
+        );
 
-    const novaPessoa = await db.get("SELECT * FROM fila WHERE id = ?", [result.id]);
-    
-    io.emit('FILA_ATUALIZADA', await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC"));
-    io.emit('NOTIFICACAO_CARTORIO', { 
-        cartorioId: novoCartorioId, 
-        mensagem: `CARO COLÉGA ECAMINHEI ${antigaPessoa.nome} PARA QUE SEJA ATENDIDA AI. Enviado por: ${origemCartorioNome}`,
-        tipo: 'TRANSFERENCIA'
-    });
+        const novaPessoa = await db.get("SELECT * FROM fila WHERE id = ?", [result.id]);
+        
+        io.emit('FILA_ATUALIZADA', await db.query("SELECT * FROM fila WHERE status IN ('aguardando', 'chamado', 'em_atendimento') ORDER BY hora_entrada ASC"));
+        io.emit('NOTIFICACAO_CARTORIO', { 
+            cartorioId: novoCartorioId, 
+            mensagem: `CARO COLÉGA ECAMINHEI ${antigaPessoa.nome} PARA QUE SEJA ATENDIDA AI. Enviado por: ${origemCartorioNome}`,
+            tipo: 'TRANSFERENCIA'
+        });
 
-    res.json(novaPessoa);
+        res.json(novaPessoa);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Gerar Relatórios

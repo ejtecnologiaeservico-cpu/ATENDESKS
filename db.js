@@ -30,6 +30,7 @@ function createTables() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             imagem TEXT,
+            senha TEXT,
             status TEXT DEFAULT 'ativo'
         )`);
 
@@ -87,16 +88,25 @@ function createTables() {
 
         // Inserir tipos padrão se vazio
         db.get("SELECT COUNT(*) as count FROM tipos_visita", (err, row) => {
+            if (err) {
+                console.error("Erro ao verificar tipos_visita:", err.message);
+                return;
+            }
             if (row && row.count === 0) {
                 const defaultTipos = ['VISITANTE', 'ADVOGADO', 'PARTE', 'OUTROS'];
                 const stmt = db.prepare("INSERT INTO tipos_visita (nome) VALUES (?)");
                 defaultTipos.forEach(t => stmt.run(t));
                 stmt.finalize();
+                console.log("Tipos de visita padrão inseridos.");
             }
         });
 
         // Inserir cartórios padrão se a tabela estiver vazia
         db.get("SELECT COUNT(*) as count FROM cartorios", (err, row) => {
+            if (err) {
+                console.error("Erro ao verificar cartorios:", err.message);
+                return;
+            }
             if (row && row.count === 0) {
                 const defaultCartorios = [
                     ['Cartório de Registro Civil', '02.png'],
@@ -106,6 +116,7 @@ function createTables() {
                 const stmt = db.prepare("INSERT INTO cartorios (nome, imagem) VALUES (?, ?)");
                 defaultCartorios.forEach(c => stmt.run(c));
                 stmt.finalize();
+                console.log("Cartórios padrão inseridos.");
             }
         });
     });
