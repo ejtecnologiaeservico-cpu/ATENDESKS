@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATENDESK - AUTO ATENDIMENTO</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu-item {
+            margin-bottom: 1rem;
+        }
+
+        .menu-link {
+            display: block;
+            padding: 1rem;
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .menu-link:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="logo.png" alt="AtenDESK" style="max-width: 250px; margin-bottom: 1.5rem;">
+        <p>Acessar o módulo:</p>
+        <ul class="menu-list">
+            <li class="menu-item">
+                <a href="public/triagem/index.html" class="menu-link" style="background-color: #27ae60;">PORTARÍA</a>
+            </li>
+            <li class="menu-item">
+                <a href="public/admin/index.html" class="menu-link">RECEPÇÃO</a>
+            </li>
+            <li class="menu-item">
+                <a href="public/cartorio/index.html" class="menu-link">CARTÓRIOS</a>
+            </li>
+            <li class="menu-item">
+                <a href="public/tv/index.html" class="menu-link">PAINEL/TV</a>
+            </li>
+        </ul>
+        <div class="footer">
+            &copy; 2026 ATENDESK v1.0 -  DEV. EJ TECNOLOGIA E SERVIÇOS  >>>>>>>     EM FASE DE TESTES...
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MÓDULO CARTÓRIOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--light); color: var(--primary); }
+        .header { background: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { padding: 2rem; max-width: 800px; margin: auto; }
+        
+        .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        
+        .login-area { text-align: center; max-width: 400px; margin: 5rem auto; }
+        .login-area select, .login-area input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+        .btn { border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        .fila-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #eee; }
+        .fila-item:last-child { border-bottom: none; }
+        .fila-info h4 { margin: 0; font-size: 1.1rem; }
+        .fila-info p { margin: 0.2rem 0 0; color: #666; font-size: 0.85rem; }
+        
+        .status-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; font-weight: bold; }
+        .badge-aguardando { background: #dfe6e9; color: #636e72; }
+        .badge-chamado { background: #74b9ff; color: #0984e3; }
+        .badge-atendendo { background: #55efc4; color: #00b894; }
+
+        .notification-toast { position: fixed; top: 20px; right: 20px; background: white; border-left: 5px solid var(--accent); padding: 1rem; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; z-index: 1000; animation: slideIn 0.3s ease-out; max-width: 300px; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; }
+        
+        .transfer-select { width: 100%; padding: 0.8rem; margin: 1rem 0; border-radius: 8px; border: 1px solid #ccc; }
+        
+        #bell-icon { font-size: 1.5rem; position: relative; cursor: pointer; transition: transform 0.2s; }
+        #bell-icon:hover { transform: scale(1.1); }
+        .bell-dot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: var(--danger); border-radius: 50%; display: none; border: 2px solid white; }
+        
+        .fila-item { 
+            background: white; 
+            margin-bottom: 10px; 
+            border-radius: 10px; 
+            border-left: 5px solid var(--accent);
+            transition: all 0.3s;
+        }
+        .fila-item:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .fila-item.status-chamado { border-left-color: var(--warning); }
+        .fila-item.status-atendendo { border-left-color: var(--success); }
+
+        .sidebar-notif {
+            position: fixed;
+            right: -350px;
+            top: 0;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            z-index: 1500;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .sidebar-notif.active { right: 0; }
+        .notif-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .notif-item.new { background: #f0f7ff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display: flex; align-items: center;">
+            <img src="../../logo.png" alt="AtenDESK" style="height: 40px; margin-right: 15px;">
+            <h2 id="cartorio-nome" style="margin: 0;">ATENDESK - Cartório</h2>
+        </div>
+        <div id="bell-icon" onclick="toggleNotifications()">
+            🔔<div class="bell-dot" id="notif-dot"></div>
+        </div>
+    </div>
+
+    <div id="sidebar-notif" class="sidebar-notif">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <h3>Notificações</h3>
+            <button class="btn btn-danger" onclick="toggleNotifications()">X</button>
+        </div>
+        <div id="notif-list">
+            <p style="text-align:center; color:#999">Nenhuma notificação.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Login -->
+        <div id="login-area" class="card login-area">
+            <h3>Acessar Guichê</h3>
+            <select id="cartorio-id">
+                <option value="">Carregando...</option>
+            </select>
+            <input type="password" id="cartorio-senha" placeholder="Senha">
+            <button class="btn btn-primary" style="width:100%" onclick="login()">Entrar</button>
+        </div>
+
+        <!-- Painel de Atendimento -->
+        <div id="main-panel" style="display:none">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h3>Fila de Espera</h3>
+                    <span id="fila-count" class="status-badge badge-aguardando">0 pessoas</span>
+                </div>
+                <div id="fila-lista">
+                    <!-- Itens da fila -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Transferência -->
+    <div id="modal-transfer" class="modal">
+        <div class="modal-content">
+            <h3>Encaminhar Atendimento</h3>
+            <p id="transfer-pessoa-nome"></p>
+            <select id="select-destino" class="transfer-select"></select>
+            <div style="display:flex; gap:10px">
+                <button class="btn btn-success" style="flex:1" onclick="confirmarTransferencia()">Encaminhar</button>
+                <button class="btn btn-danger" style="flex:1" onclick="fecharModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notif-toast" class="notification-toast">
+        <strong id="notif-title">Nova Notificação</strong>
+        <p id="notif-body" style="margin:5px 0 0; font-size:0.9rem;"></p>
+    </div>
+
+    <audio id="bell-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const bellSound = document.getElementById('bell-sound');
+        let meuCartorioId = null;
+        let meuCartorioNome = "";
+        let localCartorios = [];
+        let localFila = [];
+        let pessoaParaTransferir = null;
+
+        async function login() {
+            const id = document.getElementById('cartorio-id').value;
+            const senha = document.getElementById('cartorio-senha').value;
+            if(!id) return alert("Selecione um cartório");
+            
+            // Aqui simplificamos a senha, em produção use algo mais seguro
+            const c = localCartorios.find(x => x.id == id);
+            if(c) {
+                meuCartorioId = id;
+                meuCartorioNome = c.nome;
+                document.getElementById('cartorio-nome').innerText = meuCartorioNome;
+                document.getElementById('login-area').style.display = 'none';
+                document.getElementById('main-panel').style.display = 'block';
+                renderFila();
+            }
+        }
+
+        function renderFila() {
+            if(!meuCartorioId) return;
+            const lista = document.getElementById('fila-lista');
+            const countEl = document.getElementById('fila-count');
+            lista.innerHTML = '';
+            
+            const minhaFila = localFila.filter(p => p.cartorio_id == meuCartorioId);
+            countEl.innerText = `${minhaFila.length} pessoas`;
+
+            if(minhaFila.length === 0) {
+                lista.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Ninguém aguardando no momento.</p>';
+                return;
+            }
+
+            minhaFila.forEach(p => {
+                const item = document.createElement('div');
+                item.className = `fila-item status-${p.status}`;
+                
+                let botoes = '';
+                if(p.status === 'aguardando') {
+                    botoes = `<button class="btn btn-primary" onclick="mudarStatus(${p.id}, 'chamado')">Chamar</button>`;
+                } else if(p.status === 'chamado') {
+                    botoes = `
+                        <button class="btn btn-success" onclick="mudarStatus(${p.id}, 'em_atendimento')">Atender</button>
+                        <button class="btn btn-warning" onclick="abrirTransferencia(${p.id})">Encaminhar</button>
+                    `;
+                } else if(p.status === 'em_atendimento') {
+                    botoes = `
+                        <button class="btn btn-success" onclick="mudarStatus(${p.id}, 'finalizado')">Finalizar</button>
+                        <button class="btn btn-warning" onclick="abrirTransferencia(${p.id})">Encaminhar</button>
+                    `;
+                }
+
+                item.innerHTML = `
+                    <div class="fila-info" style="display:flex; align-items:center; gap:15px; padding:10px">
+                        ${p.foto ? `<img src="${p.foto}" style="width:50px; height:50px; border-radius:50%; object-fit:cover">` : '<div style="width:50px; height:50px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center">👤</div>'}
+                        <div>
+                            <h4>${p.nome}</h4>
+                            <p>CPF: ${p.cpf} | <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span></p>
+                            ${p.origem_transferencia ? `<p style="color:var(--accent); font-weight:bold">Transf. de: ${p.origem_transferencia}</p>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:5px; padding:10px; border-top:1px solid #eee; justify-content:flex-end">${botoes}</div>
+                `;
+                lista.appendChild(item);
+            });
+        }
+
+        async function mudarStatus(id, novoStatus) {
+            await fetch(`/api/fila/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: novoStatus})
+            });
+        }
+
+        function abrirTransferencia(id) {
+            pessoaParaTransferir = localFila.find(p => p.id == id);
+            document.getElementById('transfer-pessoa-nome').innerText = pessoaParaTransferir.nome;
+            const select = document.getElementById('select-destino');
+            select.innerHTML = '<option value="">Selecione o destino...</option>';
+            localCartorios.filter(c => c.id != meuCartorioId).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.nome;
+                select.appendChild(opt);
+            });
+            document.getElementById('modal-transfer').style.display = 'flex';
+        }
+
+        async function confirmarTransferencia() {
+            const destinoId = document.getElementById('select-destino').value;
+            const destinoNome = document.getElementById('select-destino').options[document.getElementById('select-destino').selectedIndex].text;
+            if(!destinoId) return alert("Selecione um destino");
+
+            await fetch('/api/transferir', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id: pessoaParaTransferir.id,
+                    novoCartorioId: destinoId,
+                    nomeNovoCartorio: destinoNome,
+                    origemCartorioNome: meuCartorioNome
+                })
+            });
+            fecharModal();
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-transfer').style.display = 'none';
+        }
+
+        function toggleNotifications() {
+            const sidebar = document.getElementById('sidebar-notif');
+            sidebar.classList.toggle('active');
+            if(sidebar.classList.contains('active')) {
+                document.getElementById('notif-dot').style.display = 'none';
+                document.querySelectorAll('.notif-item.new').forEach(i => i.classList.remove('new'));
+            }
+        }
+
+        function notify(title, body) {
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-body').innerText = body;
+            document.getElementById('notif-toast').style.display = 'block';
+            document.getElementById('notif-dot').style.display = 'block';
+            
+            const list = document.getElementById('notif-list');
+            if(list.querySelector('p')) list.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'notif-item new';
+            item.innerHTML = `<strong>${title}</strong><br>${body}<br><small>${new Date().toLocaleTimeString()}</small>`;
+            list.prepend(item);
+
+            bellSound.play().catch(() => {});
+            setTimeout(() => {
+                document.getElementById('notif-toast').style.display = 'none';
+            }, 5000);
+        }
+
+        socket.on('DADOS_INICIAIS', (data) => {
+            localCartorios = data.cartorios;
+            localFila = data.fila;
+            const select = document.getElementById('cartorio-id');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            localCartorios.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+            });
+            renderFila();
+        });
+
+        socket.on('FILA_ATUALIZADA', (fila) => {
+            localFila = fila;
+            renderFila();
+        });
+
+        socket.on('NOTIFICACAO_CARTORIO', (data) => {
+            if(data.cartorioId == meuCartorioId) {
+                notify(data.tipo === 'TRANSFERENCIA' ? "Encaminhamento Recebido" : "Novo na Fila", data.mensagem);
+            }
+        });
+
+        socket.on('CARTORIOS_ATUALIZADOS', (cartorios) => {
+            localCartorios = cartorios;
+        });
+    </script>
+</body>
+</html>

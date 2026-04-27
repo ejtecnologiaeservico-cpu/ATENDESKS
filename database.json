@@ -1,0 +1,10 @@
+{
+    "cartorios": [
+        { "id": 1, "nome": "Cartório A" },
+        { "id": 2, "nome": "Cartório B" },
+        { "id": 3, "nome": "Cartório C" }
+    ],
+    "fila": [],
+    "ultimaChamada": null,
+    "historicoChamadas": []
+}
