@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAINEL/TV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #003366;
+            --secondary: #0056b3;
+            --accent: #FFD700;
+            --text: #FFFFFF;
+            --bg: #001a35;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            height: 100vh; 
+            width: 100vw;
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+        }
+
+        .header {
+            height: 12vh;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4vw;
+            border-bottom: 4px solid var(--accent);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .logo-text { font-size: 5vh; font-weight: 900; letter-spacing: 2px; }
+        .clock { font-size: 4vh; font-weight: 700; background: rgba(0,0,0,0.3); padding: 1vh 2vw; border-radius: 50px; }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            padding: 2vh 2vw;
+            gap: 2vw;
+        }
+
+        .current-call {
+            flex: 2;
+            background: rgba(255,255,255,0.05);
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.1);
+            position: relative;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .cartorio-badge {
+            font-size: 4vh;
+            color: var(--accent);
+            margin-bottom: 2vh;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
+
+        .person-name {
+            font-size: 14vh;
+            font-weight: 900;
+            line-height: 1;
+            margin: 2vh 0;
+            color: #fff;
+            text-shadow: 4px 4px 15px rgba(0,0,0,0.8);
+        }
+
+        .guiche-info {
+            font-size: 6vh;
+            color: #7FDBFF;
+            margin-top: 2vh;
+        }
+
+        .sidebar {
+            flex: 1;
+            background: rgba(0,0,0,0.2);
+            border-radius: 30px;
+            padding: 2vh;
+            display: flex;
+            flex-direction: column;
+            gap: 2vh;
+        }
+
+        .sidebar-title {
+            font-size: 3vh;
+            font-weight: 700;
+            text-align: center;
+            color: var(--accent);
+            border-bottom: 2px solid rgba(255,215,0,0.3);
+            padding-bottom: 1vh;
+            margin-bottom: 1vh;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5vh;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.08);
+            padding: 2vh;
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 8px solid var(--secondary);
+            transition: transform 0.3s;
+        }
+
+        .history-item.active { transform: scale(1.02); background: rgba(255,255,255,0.15); border-left-color: var(--accent); }
+
+        .hist-name { font-size: 3vh; font-weight: 700; color: #fff; }
+        .hist-loc { font-size: 2vh; color: #7FDBFF; }
+
+        .footer {
+            height: 8vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .news-ticker {
+            white-space: nowrap;
+            font-size: 3vh;
+            color: #fff;
+            animation: ticker 30s linear infinite;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse { animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        #video-bg {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+            opacity: 0.2;
+            filter: blur(5px);
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="video-bg">
+        <source src="https://www.w3schools.com/howto/rain.mp4" type="video/mp4">
+    </video>
+
+    <div class="header">
+            <img src="../../logo.png" alt="AtenDESK" style="height: 10vh;">
+            <div class="clock" id="clock">00:00:00</div>
+        </div>
+
+    <div class="main-container">
+        <div class="current-call" id="display-atual">
+            <div class="cartorio-badge">Aguardando...</div>
+            <div class="person-name">---</div>
+            <div class="guiche-info">Prepare seu documento</div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-title">ÚLTIMAS CHAMADAS</div>
+            <div class="history-list" id="lista-historico">
+                <!-- Historico preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="news-ticker">
+        SE JÁ PASSOU PELA PORTARIA, AGUARDE SER CHAMADO(A) • MANTENHA SE EM SEU LUGAR • TENHA EM MÃOS DOCUMENTO DE IDENTIFICAÇÃO COM FOTO • SE PRECISAR DE MAIS INFORMAÇÕES CONSULTE A RECEPÇÃO • 
+        </div>
+    </div>
+
+    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const alertSound = document.getElementById('alert-sound');
+
+        function atualizarRelogio() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('pt-BR');
+        }
+        setInterval(atualizarRelogio, 1000);
+        atualizarRelogio();
+
+        function falar(texto) {
+            const msg = new SpeechSynthesisUtterance(texto);
+            msg.lang = 'pt-BR';
+            msg.rate = 0.9;
+            msg.pitch = 1;
+            window.speechSynthesis.speak(msg);
+        }
+
+        function atualizarTelaPrincipal(pessoa) {
+            if (!pessoa) return;
+            const display = document.getElementById('display-atual');
+            display.classList.remove('pulse');
+            void display.offsetWidth; // Trigger reflow
+            display.classList.add('pulse');
+
+            display.innerHTML = `
+                <div class="cartorio-badge">${pessoa.nome_cartorio}</div>
+                ${pessoa.foto ? `<img src="${pessoa.foto}" style="width:200px; height:200px; border-radius:50%; object-fit:cover; border:5px solid var(--accent); margin-bottom:20px">` : ''}
+                <div class="person-name">${pessoa.nome}</div>
+                <div class="guiche-info">DIRIJA-SE AO ATENDIMENTO</div>
+            `;
+
+            falar(`${pessoa.nome}, compareça ao ${pessoa.nome_cartorio}`);
+        }
+
+        function atualizarHistorico(historico) {
+            const list = document.getElementById('lista-historico');
+            list.innerHTML = '';
+            
+            historico.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `history-item ${index === 0 ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div>
+                        <div class="hist-name">${item.nome}</div>
+                        <div class="hist-loc">${item.nome_cartorio}</div>
+                    </div>
+                    <div style="font-weight:bold; color:var(--accent)">${item.status === 'chamado' ? 'CHAMADO' : 'EM ATEND.'}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        socket.on('DADOS_INICIAIS', (data) => {
+            if (data.ultimaChamada) {
+                atualizarTelaPrincipal(data.ultimaChamada);
+            }
+            atualizarHistorico(data.historicoChamadas);
+        });
+
+        socket.on('NOVA_CHAMADA', (pessoa) => {
+            atualizarTelaPrincipal(pessoa);
+            alertSound.play().catch(e => console.log("Som bloqueado"));
+        });
+
+        socket.on('HISTORICO_ATUALIZADO', (historico) => {
+            atualizarHistorico(historico);
+        });
+
+        socket.on('SISTEMA_RESETADO', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>

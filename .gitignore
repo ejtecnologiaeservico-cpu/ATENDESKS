@@ -1,0 +1,14 @@
+node_modules/
+.env
+atendesk.db
+atendesk.db-journal
+*.log
+.DS_Store
+.venv/
+__pycache__/
+dist/
+build/
+*.exe
+RUN.bat
+*.pdf
+public/triagem/models/

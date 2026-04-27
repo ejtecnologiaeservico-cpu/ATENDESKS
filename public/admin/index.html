@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MÓDULO ADMINISTRATIVO</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1, h2 { color: #1a73e8; margin-bottom: 1rem; text-align: center; }
+        h2 { font-size: 1.2rem; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #5f6368; font-weight: bold; }
+        input, select { width: 100%; padding: 0.75rem; border: 1px solid #dadce0; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 0.75rem; background: #1a73e8; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: background 0.2s; font-weight: bold; }
+        button:hover { background: #1765cc; }
+        .btn-secondary { background: #5f6368; margin-top: 10px; }
+        .btn-danger { background: #d93025; padding: 5px 10px; width: auto; font-size: 0.8rem; }
+        .btn-edit { background: #f4b400; padding: 5px 10px; width: auto; font-size: 0.8rem; margin-right: 5px; }
+        .message { margin-top: 1rem; text-align: center; padding: 0.5rem; border-radius: 4px; display: none; }
+        .success { background: #e6f4ea; color: #1e8e3e; display: block; }
+        .resumo, .cartorio-list { margin-top: 1.5rem; }
+        .item-list { list-style: none; padding: 0; }
+        .item-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .item-list img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+        .flex-row { display: flex; align-items: center; }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: #dadce0; color: #5f6368; padding: 10px 20px; border-radius: 20px; cursor: pointer; border: none; }
+        .tab-btn.active { background: #1a73e8; color: white; }
+        .tab-content { display: none; width: 100%; max-width: 500px; }
+        .tab-content.active { display: block; }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="offline-warning" style="display:none; background: #ff4d4d; color: white; text-align: center; padding: 10px; font-weight: bold; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+        ⚠️ SERVIDOR OFFLINE: O sistema não salvará dados para outros usuários. Use o Render.com para hospedar.
+    </div>
+
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('tab-relatorios')">Relatórios</button>
+        <button class="tab-btn" onclick="switchTab('tab-config')">Configurar Cartórios</button>
+    </div>
+
+    <!-- ABA RELATÓRIOS -->
+    <div id="tab-relatorios" class="tab-content active">
+        <div class="card">
+            <h1>Relatórios de Atendimento</h1>
+            <div class="form-group">
+                <label>Tipo de Relatório</label>
+                <select id="relatorio-tipo">
+                    <option value="fluxo">Fluxo Geral</option>
+                    <option value="entrada">Entradas</option>
+                    <option value="saida">Saídas</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filtrar por CPF (Opcional)</label>
+                <input type="text" id="relatorio-cpf" placeholder="000.000.000-00">
+            </div>
+            <div style="display:flex; gap:10px">
+                <button onclick="gerarRelatorio('pdf')" class="btn-primary">Gerar PDF</button>
+                <button onclick="gerarRelatorio('texto')" class="btn-secondary" style="margin-top:0">Gerar Texto</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-config" class="tab-content">
+        <div class="card">
+            <h1>Configurar Cartórios</h1>
+            
+            <h2 id="form-cartorio-title">Novo Cartório</h2>
+            <input type="hidden" id="edit-cartorio-id">
+            <div class="form-group">
+                <label for="nome-cartorio">Nome do Cartório</label>
+                <input type="text" id="nome-cartorio" placeholder="Ex: Cartório de Notas">
+            </div>
+            <div class="form-group">
+                <label for="imagem-cartorio">Logo/Imagem</label>
+                <input type="file" id="imagem-cartorio" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label for="senha-cartorio">Senha de Acesso</label>
+                <input type="password" id="senha-cartorio" placeholder="Crie uma senha para este cartório">
+            </div>
+            <div style="display:flex; gap:10px">
+                <button id="btn-save-cartorio" onclick="cadastrarCartorio()">Salvar Cartório</button>
+                <button id="btn-cancel-edit" onclick="cancelarEdicao()" class="btn-secondary" style="display:none; margin-top:0">Cancelar</button>
+            </div>
+            <div id="feedback-config" class="message"></div>
+
+            <div class="cartorio-list">
+                <h2>Cartórios Cadastrados</h2>
+                <ul id="lista-cartorios" class="item-list"></ul>
+            </div>
+
+            <button onclick="limparSistema()" class="btn-secondary">Resetar Todo o Sistema</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // No deploy, usamos o host atual. Localmente também funcionará se acessado pelo servidor.
+        const API_URL = window.location.origin;
+        const socket = io({
+            reconnectionAttempts: 3,
+            timeout: 10000
+        });
+
+        socket.on('connect_error', () => {
+            document.getElementById('offline-warning').style.display = 'block';
+        });
+
+        socket.on('connect', () => {
+            document.getElementById('offline-warning').style.display = 'none';
+        });
+        
+        let localFila = [];
+        let localCartorios = [];
+
+        // --- GERENCIAMENTO DE ESTADO ---
+        async function carregarDadosIniciais() {
+            try {
+                const res = await fetch(`${API_URL}/api/data`);
+                const data = await res.json();
+                localFila = data.fila;
+                localCartorios = data.cartorios;
+                atualizarUI();
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+            }
+        }
+
+        async function gerarRelatorio(formato) {
+            const tipo = document.getElementById('relatorio-tipo').value;
+            const cpf = document.getElementById('relatorio-cpf').value;
+            
+            let url = `${API_URL}/api/relatorios?tipo=${tipo}&formato=${formato}`;
+            if (cpf) url += `&cpf=${cpf}`;
+            
+            window.open(url, '_blank');
+        }
+
+        // --- NAVEGAÇÃO ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- CADASTRO DE CARTÓRIO ---
+        async function cadastrarCartorio() {
+            const idInput = document.getElementById('edit-cartorio-id');
+            const nomeInput = document.getElementById('nome-cartorio');
+            const imagemInput = document.getElementById('imagem-cartorio');
+            const senhaInput = document.getElementById('senha-cartorio');
+            const feedback = document.getElementById('feedback-config');
+
+            if (!nomeInput.value || (!idInput.value && !senhaInput.value)) {
+                alert('O nome e a senha do cartório são obrigatórios!');
+                return;
+            }
+
+            let imagemBase64 = '';
+            if (imagemInput.files[0]) {
+                imagemBase64 = await toBase64(imagemInput.files[0]);
+            } else if (idInput.value) {
+                // Se for edição e não subiu nova imagem, mantém a anterior (se possível)
+                const original = localCartorios.find(c => c.id == idInput.value);
+                imagemBase64 = original ? original.imagem : '';
+            }
+
+            const cartorioData = {
+                nome: nomeInput.value,
+                imagem: imagemBase64,
+                senha: senhaInput.value
+            };
+
+            try {
+                let res;
+                if (idInput.value) {
+                    // Edição
+                    res = await fetch(`${API_URL}/api/cartorios/${idInput.value}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cartorioData)
+                    });
+                } else {
+                    // Novo Cadastro
+                    res = await fetch(`${API_URL}/api/cartorios`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cartorioData)
+                    });
+                }
+                
+                if (res.ok) {
+                    cancelarEdicao();
+                    showFeedback(feedback, idInput.value ? '✅ Cartório atualizado!' : '✅ Cartório cadastrado!');
+                }
+            } catch (e) {
+                alert("Erro ao conectar com o servidor");
+            }
+        }
+
+        function editarCartorio(id) {
+            const cartorio = localCartorios.find(c => c.id == id);
+            if (!cartorio) return;
+
+            document.getElementById('edit-cartorio-id').value = cartorio.id;
+            document.getElementById('nome-cartorio').value = cartorio.nome;
+            document.getElementById('senha-cartorio').value = ''; // Não preenche a senha por segurança
+            document.getElementById('senha-cartorio').placeholder = '(Deixe em branco para manter a atual)';
+            
+            document.getElementById('form-cartorio-title').innerText = "Editar Cartório";
+            document.getElementById('btn-save-cartorio').innerText = "Atualizar Cartório";
+            document.getElementById('btn-cancel-edit').style.display = 'block';
+            
+            // Rolar para o topo do formulário
+            document.getElementById('form-cartorio-title').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('edit-cartorio-id').value = '';
+            document.getElementById('nome-cartorio').value = '';
+            document.getElementById('senha-cartorio').value = '';
+            document.getElementById('senha-cartorio').placeholder = 'Crie uma senha para este cartório';
+            document.getElementById('imagem-cartorio').value = '';
+            
+            document.getElementById('form-cartorio-title').innerText = "Novo Cartório";
+            document.getElementById('btn-save-cartorio').innerText = "Salvar Cartório";
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+        }
+
+        async function removerCartorio(id) {
+            if (confirm('Deseja remover este cartório?')) {
+                try {
+                    await fetch(`${API_URL}/api/cartorios/${id}`, { method: 'DELETE' });
+                } catch (e) {
+                    alert("Erro ao conectar com o servidor");
+                }
+            }
+        }
+
+        async function limparSistema() {
+            if(confirm('ATENÇÃO: Isso apagará TODOS os cartórios e filas. Confirmar?')) {
+                try {
+                    await fetch(`${API_URL}/api/reset`, { method: 'POST' });
+                } catch (e) {
+                    alert("Erro ao conectar com o servidor");
+                }
+            }
+        }
+
+        // --- SOCKET.IO EVENTS ---
+        socket.on('DADOS_INICIAIS', (data) => {
+            localFila = data.fila;
+            localCartorios = data.cartorios;
+            atualizarUI();
+        });
+
+        socket.on('FILA_ATUALIZADA', (fila) => {
+            localFila = fila;
+            atualizarUI();
+        });
+
+        socket.on('CARTORIOS_ATUALIZADOS', (cartorios) => {
+            localCartorios = cartorios;
+            atualizarUI();
+        });
+
+        socket.on('SISTEMA_RESETADO', () => {
+            location.reload();
+        });
+
+        // --- UTILITÁRIOS ---
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function showFeedback(el, msg) {
+            el.textContent = msg;
+            el.className = 'message success';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function atualizarUI() {
+            // Atualizar Lista de Cartórios (Config)
+            const lista = document.getElementById('lista-cartorios');
+            lista.innerHTML = '';
+            localCartorios.forEach(c => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="flex-row">
+                        ${c.imagem ? `<img src="${c.imagem}">` : '<div style="width:40px"></div>'}
+                        <span>${c.nome}</span>
+                    </div>
+                    <div>
+                        <button class="btn-edit" onclick="editarCartorio(${c.id})">Editar</button>
+                        <button class="btn-danger" onclick="removerCartorio(${c.id})">Remover</button>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        atualizarUI();
+        carregarDadosIniciais();
+    </script>
+</body>
+</html>
